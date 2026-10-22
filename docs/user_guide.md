@@ -18,15 +18,19 @@
     - [Anthropic](#anthropic)
     - [Bedrock](#bedrock)
       - [Default Bedrock models](#default-bedrock-models)
+      - [Other Bedrock models](#other-bedrock-models)
     - [Gemini](#gemini)
       - [Gemini with ADC](#gemini-with-adc)
         - [Gemini with ADC Prerequisites](#gemini-with-adc-prerequisites)
         - [Gemini with ADC Configuration](#gemini-with-adc-configuration)
+        - [Simpler ADC Alternative: Built-in gemini Class](#simpler-adc-alternative-built-in-gemini-class)
     - [Ollama](#ollama)
       - [Ollama Prerequisites](#ollama-prerequisites)
       - [Ollama Configuration](#ollama-configuration)
       - [Using Ollama in Docker or Remote Server](#using-ollama-in-docker-or-remote-server)
+      - [Using llmman](#using-llmman)
       - [Example agent network](#example-agent-network)
+    - [Mistral](#mistral)
     - [Configuring Default Models with Environment Variables](#configuring-default-models-with-environment-variables)
       - [Using Optional Environment Variable Substitution](#using-optional-environment-variable-substitution)
       - [Setting Your Own Default Model](#setting-your-own-default-model)
@@ -337,11 +341,9 @@ After your Azure OpenAI resource is created, you must deploy a model
 - Click on `Go to Azure AI Foundry portal`
 - Click on `Create new deployment`
 - Choose a model (e.g., `gpt-4o`), then pick a deployment name (e.g., `my-gpt4o`), and click `Deploy`
-- Find the `api_version` on the deployed model page (e.g., "2024-12-01-preview")
-- Optionally, set environment variables to the value of the deployment name and API version
+- Optionally, set an environment variable to the value of the deployment name
 
-    export AZURE_OPENAI_DEPLOYMENT_NAME="Your deployment name"\
-    export OPENAI_API_VERSION="Your OpenAI API version"
+    export AZURE_OPENAI_DEPLOYMENT_NAME="Your deployment name"
 
 Finally, get your API key and endpoint
 
@@ -367,15 +369,19 @@ If you did NOT set the environment variables, the `llm_config` in your `.hocon` 
     "llm_config": {
         "model_name": "azure-gpt-4o",
         "openai_api_key": "your_api_key"
-        "openai_api_version": "your_api_version",
         "azure_endpoint": "your_end_point",
         "deployment_name": "your_deployment_name"
     }
 ```
 
-> **Note**: Make sure your `model_name` starts with `azure-`. E.g., if you have a `gpt-4o` model,
-> your model name should be `azure-gpt-4o`, or else your agent network might think you are using
-> an OpenAI model (and not an Azure OpenAI model).
+> **Note**: Use one of the `azure-` model names in neuro-san's default model list (e.g., `azure-gpt-4o`), or set
+> `"class": "azure-openai"` with the OpenAI model behind your deployment as the `model_name` (e.g.,
+> `"model_name": "gpt-5.2"`), as `config/private_llm_config.hocon` does. Otherwise your agent network might think
+> you are using an OpenAI model (and not an Azure OpenAI model).
+>
+> **Note**: Requests go to Azure's v1 API (`<endpoint>/openai/v1/`), which needs no API version, and use the
+> Responses API by default. If your region or model does not offer it, add `"use_responses_api": false` to the
+> `llm_config` to use Chat Completions instead.
 >
 > **Tip**: While `OPENAI_API_KEY` may still be recognized for backward compatibility,
 > it's recommended to use `AZURE_OPENAI_API_KEY` to avoid conflicts and align with upcoming changes in LangChain.
@@ -405,85 +411,112 @@ Here you can get an Anthropic API [key](https://console.anthropic.com/settings/k
 
 ### Bedrock
 
-To use Amazon Bedrock models, you need valid AWS credentials. Below are the recommended ways to provide credentials,
-followed by guidance on how to select and configure models.
+Neuro-San has two classes for Amazon Bedrock:
 
-1. Environment variables
+- `anthropic-bedrock` for Anthropic Claude models. The [default Bedrock models](#default-bedrock-models) use it, and
+  it takes the same `llm_config` keys as the Anthropic models, `thinking` included
+- `bedrock` for other Bedrock models, such as Amazon Nova, Mistral or Meta Llama
+  (see [Other Bedrock models](#other-bedrock-models))
 
-    You can set the following environment variables directly:
+1. Package
 
-   - `AWS_ACCESS_KEY_ID`
+    Neuro-san-studio does not install `langchain-aws`, which both classes need. Install it for the class you use:
 
-   - `AWS_SECRET_ACCESS_KEY`
+    ```bash
+    pip install "langchain-aws[anthropic]"   # for anthropic-bedrock
+    pip install langchain-aws                # for bedrock
+    ```
 
-   - `AWS_REGION` or `AWS_DEFAULT_REGION`
+    Without it, Neuro-San raises an error that names the package to install.
 
-    > Note: You may set `region_name` in the `llm_config` of the agent network HOCON file instead
+2. Credentials
 
-    This is sufficient if you only have **one AWS profile** or if you're certain these environment variables
-    correspond to the correct credentials.
+    Provide AWS credentials in one of these ways:
 
-2. Named profile (**required for multiple profiles**)
+   - Set the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables, plus `AWS_SESSION_TOKEN` for
+     temporary credentials
 
-    If you have **multiple profiles** in `~/.aws/credentials` or `~/.aws/config`, it's recommended to explicitly set
-    the credentials_profile_name field to avoid ambiguity. This tells the system exactly which profile to use,
-    even if other credentials are present in the environment.
+   - Use a named profile from `~/.aws/credentials` or `~/.aws/config` by setting the `AWS_PROFILE` environment
+     variable. Its credentials are used only when `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are not set
 
-    If `credentials_profile_name` is not specified in the `llm_config` of the HOCON file:
+   - Set a Bedrock API key in the `AWS_BEARER_TOKEN_BEDROCK` environment variable. Do not also set
+     `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the `anthropic-bedrock` class then fails with an error, and
+     the `bedrock` class ignores the keys and logs a warning
 
-   - The default profile will be used.
-
-   - On EC2 instance, credentials may be automatically loaded from the Instance Metadata Service (IMDS).
-
-    See the full AWS credential resolution order
+    With none of these, the default profile is used, and on an EC2 instance the credentials may come from the
+    Instance Metadata Service (IMDS). See the full AWS credential resolution order
     [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)
 
-   > Note: You may also need to specify environment variable `AWS_REGION` or the `region_name` field if
-region is not set in your AWS profile.
+    > Note: The `credentials_profile_name` key in `llm_config` works only with the `bedrock` class. The
+    > `anthropic-bedrock` class ignores it without a warning, so use `AWS_PROFILE` for Claude models.
 
-3. Model selection
+3. Region
 
-    In your agent network HOCON file, specify the model name, the credentials profile, and the region (if needed):
+    Set `region_name` in the `llm_config`, the `AWS_REGION` or `AWS_DEFAULT_REGION` environment variable, or a region
+    in your AWS profile. With none of these, the `anthropic-bedrock` class sends requests to `us-east-1` and logs a
+    warning.
+
+4. Model selection
+
+    In your agent network HOCON file, specify the model name and, if needed, the region:
 
     ```hocon
         "llm_config": {
+            "model_name": "bedrock-claude-sonnet",
 
-            # Bedrock documentation lists both model name and model ID.
-            # Use the **Model ID** as the value for "model_name".
-            "model_name": "bedrock-us-claude-3-7-sonnet",
-
-            # Optional if using env vars or default profile
-            "credentials_profile_name": "<profile_name>",
-
-            # Optional, but required if not defined in your profile config
-            # or with env var AWS_REGION or AWS_DEFAULT_REGION
+            # Optional if the region comes from AWS_REGION, AWS_DEFAULT_REGION or your AWS profile
             "region_name": "us-west-2"
         }
     ```
 
 #### Default Bedrock models
 
-The default supported Bedrock model names currently include:
+The default Bedrock model names are:
 
-- `bedrock-us-claude-opus-4`
+- `bedrock-claude-fable` (Claude Fable 5.1)
 
-- `bedrock-us-claude-sonnet-4`
+- `bedrock-claude-opus` (Claude Opus 5.5)
 
-- `bedrock-us-claude-3-7-sonnet`
+- `bedrock-claude-sonnet` (Claude Sonnet 5.5)
 
-These models require access to one of the following AWS regions:
+- `bedrock-claude-haiku` (Claude Haiku 5.5)
 
-- `us-east-1`
+They use Bedrock's global cross-region inference profiles, such as `global.anthropic.claude-sonnet-5-5`, which may
+route a request to any AWS region. To keep requests within one geography, or to use another Claude model, set the
+`anthropic-bedrock` class and the model or inference profile ID. Set `max_tokens` as well, or the output can be
+limited to 4096 tokens:
 
-- `us-east-2`
+```hocon
+    "llm_config": {
+        "class": "anthropic-bedrock",
+        "model_name": "us.anthropic.claude-sonnet-5-5",
+        "max_tokens": 16384,
+        "region_name": "us-west-2"
+    }
+```
 
-- `us-west-2`
+See [Cross-region inference](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html) for
+how geographic and global profiles differ. Each model's page in
+[Models at a glance](https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards.html) lists its inference
+profile IDs and the AWS Regions where it is available.
 
-If these are not available in your account, you can still use other Bedrock models available to you by
-[using the class key](#using-the-class-key).
+#### Other Bedrock models
 
-To find which models are available in your region, refer to the official AWS documentation:
-[Supported models – Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html)
+For a model other than Claude, set the `bedrock` class and the model ID
+(see [Using the `class` Key](#using-the-class-key)). Also set `"beta_use_converse_api": true`. Without it the model
+gets no tools, and no error says so.
+
+```hocon
+    "llm_config": {
+        "class": "bedrock",
+        "model_name": "amazon.nova-pro-v1:0",
+        "beta_use_converse_api": true,
+
+        # Optional: a named profile. This class uses it even when AWS_ACCESS_KEY_ID is set
+        "credentials_profile_name": "<profile_name>",
+        "region_name": "us-east-1"
+    }
+```
 
 ### Gemini
 
@@ -535,7 +568,8 @@ API keys is not desirable or permitted.
     gcloud auth application-default login
     ```
 
-3. Install the required package (already included in `requirements.txt`):
+3. Install the required package. This is a separate, optional dependency — it is **not**
+   included in `requirements.txt` by default, since only this `ChatVertexAI`-based path needs it:
 
     ```bash
     pip install langchain-google-vertexai
@@ -551,8 +585,8 @@ API keys is not desirable or permitted.
 ##### Gemini with ADC Configuration
 
 Because ADC-based Vertex AI access requires the `project` and `location` fields — which are not part of
-Neuro-SAN's default Gemini model definitions — you must use the `class` key to instantiate
-`ChatVertexAI` directly in your `llm_config`:
+Neuro-SAN's default Gemini model definitions — you can use the `class` key to instantiate
+`ChatVertexAI` directly in your `llm_config` (see also the simpler alternative below):
 
 ```hocon
 llm_config: {
@@ -583,6 +617,38 @@ No API key is required — authentication is handled transparently by Google's A
 For more information on Vertex AI authentication and available models, see the
 [Vertex AI documentation](https://cloud.google.com/vertex-ai/docs/authentication) and the
 [LangChain ChatVertexAI reference](https://python.langchain.com/docs/integrations/chat/google_vertex_ai_palm/).
+
+##### Simpler ADC Alternative: Built-in gemini Class
+
+`ChatVertexAI` (above) is also flagged by LangChain itself as deprecated in favor of
+`langchain-google-genai`, which neuro-san's built-in `class: "gemini"` already uses under the
+hood. That class can be routed into Vertex AI/ADC mode purely through environment variables,
+with no explicit `project`/`location` keys in the config and no extra dependency to install.
+
+Note that these variables apply to the whole server process: once set, every Gemini client in
+the process routes to Vertex AI, including fallback models in other configs and the
+`gemini_image_generation` tool. A BYOK `google_api_key` from `sly_data` is silently ignored
+and the request is billed to the server's GCP project instead.
+
+```hocon
+llm_config: {
+    class: "gemini"
+    model_name: "gemini-3.5-flash"
+    temperature: 1.0   # recommended for Gemini 3.0+; 0.7 (the default) can cause loops and degraded reasoning
+}
+```
+
+```bash
+GOOGLE_GENAI_USE_VERTEXAI="true"
+GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
+GOOGLE_CLOUD_LOCATION="global"   # a specific region may 404 on newer models; global is the safe default
+```
+
+See [`config/vertex_adc_llm_config.hocon`](../config/vertex_adc_llm_config.hocon) for a
+ready-to-use version of this config, and run
+`ns check-config --hocon-path config/vertex_adc_llm_config.hocon` to verify it can actually
+connect before deploying it. Use `GOOGLE_CLOUD_LOCATION=global`; newer Gemini models may not be
+available in all regional endpoints.
 
 ### Ollama
 
@@ -698,12 +764,68 @@ You can also set the environment variable `OLLAMA_HOST`, but `base_url` takes pr
 For more information on logic of parsing the `base_url`
 see [Ollama python SDK](https://github.com/ollama/ollama-python/blob/main/ollama/_client.py#L1274)
 
+#### Using llmman
+
+[llmman](https://github.com/llmmanorg/llmman) is a local model runner that serves the Ollama, OpenAI and Anthropic APIs
+on port `17434`. Since `langchain-openai` is installed by default, the simplest setup is to use the `openai` class.
+
+1. Install and start llmman, then pull a model:
+
+    ```bash
+    curl -fsSL https://llmmanorg.github.io/install.sh | sh
+    llmman serve
+    llmman pull gemma4
+    ```
+
+2. Point the `openai` class at llmman via `openai_api_base`:
+
+    ```hocon
+        "llm_config": {
+            "class": "openai",
+            "model_name": "gemma4",
+            "openai_api_base": "http://localhost:17434/v1",
+            "openai_api_key": "llmman"
+        }
+    ```
+
+    llmman does not require an API key by default, but the OpenAI client does, so any non-empty value works.
+    Alternatively, set `OPENAI_API_BASE=http://localhost:17434/v1` in the environment and omit `openai_api_base`.
+
+llmman model names (e.g. `gemma4`, `hf.co/unsloth/Qwen3.5-0.8B-GGUF`) are not in the
+[default llm info file](https://github.com/cognizant-ai-lab/neuro-san/blob/main/neuro_san/internals/run_context/langchain/llms/default_llm_info.hocon),
+so `"class": "openai"` must be set explicitly.
+
 #### Example agent network
 
 See the [./examples/music_nerd_pro_local.md](examples/basic/music_nerd_pro_local.md) for a complete working example.
 
 For more information about how to use Ollama with LangChain,
 see [this page](https://python.langchain.com/docs/integrations/chat/ollama/)
+
+### Mistral
+
+Mistral is not one of the built-in providers in the
+[default llm info file](https://github.com/cognizant-ai-lab/neuro-san/blob/main/neuro_san/internals/run_context/langchain/llms/default_llm_info.hocon),
+so it is configured using the `class` key with the full LangChain chat model path (see
+[Using the `class` Key](#using-the-class-key)).
+
+First, install the LangChain Mistral AI integration:
+
+```shell
+pip install langchain-mistralai==1.1.2
+```
+
+Then set the `MISTRAL_API_KEY` environment variable to your Mistral API key and specify the model
+in the `llm_config` section of an agent network hocon file:
+
+```hocon
+    "llm_config": {
+        "class": "langchain_mistralai.chat_models.ChatMistralAI",
+        "model_name": "mistral-medium-latest",
+    }
+```
+
+Here you can get a Mistral API [key](https://admin.mistral.ai/).
 
 ### Configuring Default Models with Environment Variables
 
@@ -820,45 +942,46 @@ Claude models support extended thinking, which allows them to use additional tok
 before generating a final answer.
 This improves performance on complex tasks and can provide insight into the model’s reasoning process.
 
-For Anthropic models, extended thinking is configured with the `thinking` field.
-
-Example:
+Extended thinking is configured with the `thinking` field, for Anthropic models and for Claude on Bedrock alike.
+The default Claude models (`claude-fable`, `claude-opus`, `claude-sonnet`, `claude-haiku` and their
+`bedrock-claude-*` versions) use adaptive thinking, where the model decides how much to think:
 
 ```hocon
     "llm_config": {
-        "model_name": "claude-3-7-sonnet-20250219",
+        "model_name": "claude-sonnet",
+        "thinking": {"type": "adaptive"}
+    }
+```
+
+These models think adaptively even when `thinking` is left out. To change how much they think, set `"effort"` to
+`low`, `medium`, `high`, `xhigh` or `max`.
+
+The Claude 4.5 models (`claude-opus-4-5-20251101`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001` and,
+on Bedrock, `global.anthropic.claude-haiku-4-5-20251001-v1:0`) take a fixed thinking budget instead:
+
+```hocon
+    "llm_config": {
+        "model_name": "claude-haiku-4-5-20251001",
         "thinking": {"type": "enabled", "budget_tokens": 10000}
     }
 ```
 
 > Ensure that budget_tokens is at least **1024** and less than the model’s maximum token limit.
 
-**Supported models for extended thinking:**
+Each of these models rejects the other kind of thinking with an error.
 
-- Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
-- Claude Sonnet 4 (`claude-sonnet-4-20250514`)
-- Claude Sonnet 3.7 (`claude-3-7-sonnet-20250219`)
-- Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
-- Claude Opus 4.1 (`claude-opus-4-1-20250805`)
-- Claude Opus 4 (`claude-opus-4-20250514`)
-
-These same models can also be accessed via AWS Bedrock. In that case, extended thinking is configured under `model_kwargs`.
-
-Example:
+On Bedrock, `thinking` goes in the same place. Do not put it under `model_kwargs`, which is ignored:
 
 ```hocon
     "llm_config": {
-        "model_name": "bedrock-us-claude-3-7-sonnet",
-        "credentials_profile_name": "<profile_name>",
+        "model_name": "bedrock-claude-sonnet",
         "region_name": "us-west-2",
-        "model_kwargs": {
-            "thinking": {"type": "enabled", "budget_tokens": 1024}
-        }
+        "thinking": {"type": "adaptive"}
     }
 ```
 
 See
-[Langchain ChatAnthropic documentation](https://reference.langchain.com/python/integrations/langchain_anthropic/ChatAnthropic/?h=chat#langchain_anthropic.chat_models.ChatAnthropic.thinking)
+[LangChain ChatAnthropic documentation](https://reference.langchain.com/python/langchain-anthropic/chat_models/ChatAnthropic/thinking)
 for more information.
 
 ### Gemini Models
@@ -940,15 +1063,16 @@ You can define an LLM directly in `llm_config` using the `class` key in two diff
 
     Set the `class` key to one of the values listed below, then specify the model using the `model_name` key.
 
-    | LLM Provider  | `class` Value   |
-    |:--------------|:----------------|
-    | Amazon Bedrock| `bedrock`       |
-    | Anthropic     | `anthropic`     |
-    | Azure OpenAI  | `azure-openai`  |
-    | Google Gemini | `gemini`        |
-    | NVidia        | `nvidia`        |
-    | Ollma         | `ollama`        |
-    | OpenAI        | `openai`        |
+    | LLM Provider                    | `class` Value       |
+    |:--------------------------------|:--------------------|
+    | Amazon Bedrock (other models)   | `bedrock`           |
+    | Anthropic                       | `anthropic`         |
+    | Anthropic Claude on Bedrock     | `anthropic-bedrock` |
+    | Azure OpenAI                    | `azure-openai`      |
+    | Google Gemini                   | `gemini`            |
+    | NVidia                          | `nvidia`            |
+    | Ollama                          | `ollama`            |
+    | OpenAI                          | `openai`            |
 
     For example,
 
@@ -1191,25 +1315,21 @@ To use tools from toolbox in your agent network, simply call them with field `to
    - langchain tools
        - Each tool or toolkit must have a `class` key.
        - The specified class must be available in the server's `PYTHONPATH`.
-       - Additional dependencies (outside of `langchain_community`) must be installed separately.
+       - Integration-specific dependencies must be installed separately.
 
         Example:
 
         ```hocon
             "tavily_search": {
                 # Fully qualified class path of the tool to be instantiated.
-                "class": "langchain_community.tools.tavily_search.TavilySearchResults",
+                "class": "langchain_tavily.TavilySearch",
 
                 # (Optional) URL for reference documentation about this tool.
                 "base_tool_info_url": "https://python.langchain.com/docs/integrations/tools/tavily_search/",
 
                 # Arguments for the tool's constructor.
                 "args": {
-                    "api_wrapper": {
-                        # If the argument should be instantiated as a class, specify it using the "class" key.
-                        # This tells the system to create an instance of the provided class instead of passing it as-is.
-                        "class": "langchain_community.utilities.tavily_search.TavilySearchAPIWrapper"
-                    },
+                    "max_results": 5,
                 }
             }
         ```
@@ -1223,25 +1343,18 @@ To use tools from toolbox in your agent network, simply call them with field `to
         Example:
 
         ```json
-            "rag_retriever": {
-                "class": "rag.Rag",
-                "description": "Retrieve information on the given urls",
+            "slack_tool": {
+                "class": "slack.Slack",
+                "description": "Retrieve messages from the given slack channel",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "urls": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "List of url to retrieve info from"
-                        },
-                        "query": {
+                        "channel_name": {
                             "type": "string",
-                            "description": "Query for retrieval"
+                            "description": "slack channel to get messages from"
                         }
                     },
-                    "required": ["urls", "query"]
+                    "required": ["channel_name"]
                 },
             }
         ```
@@ -1362,7 +1475,58 @@ following methods.
     directly in the agent network HOCON configuration.
    - For example, see [mcp_info.hocon](../neuro_san_studio/mcp/mcp_info.hocon)
 
+3. OAuth bearer-token flow (client-driven)
+
+    Rather than passing a token in sly data directly or setting it up as an environment variable in
+    `MCP_SERVERS_INFO_FILE`, an agent network can **declare** which MCP server URLs need
+    `http_headers` and let a client that supports OAuth — such as
+    [nsflow](https://github.com/cognizant-ai-lab/nsflow) — obtain the token and inject it into
+    sly_data for you. The client runs the OAuth 2.1 authorization-code flow with PKCE (and Dynamic
+    Client Registration where the server supports it), keeps the token on the backend, and at chat
+    time injects `sly_data["http_headers"]["<MCP_URL>"] = {"Authorization": "Bearer <token>"}`.
+    Tokens are never shown to the LLM or stored in the network.
+
+    Declare the expected shape under the agent `function` using `sly_data_schema`:
+
+    ```json
+    "sly_data_schema": {
+        "type": "object",
+        "properties": {
+            "http_headers": {
+                "type": "object",
+                "properties": {
+                    "https://api.you.com/mcp": {
+                        "type": "object",
+                        "properties": {
+                            "Authorization": { "type": "string" }
+                        },
+                        "required": ["Authorization"]
+                    }
+                },
+                "required": ["https://api.you.com/mcp"]
+            }
+        },
+        "required": ["http_headers"]
+    }
+    ```
+
+   - **Injection is opportunistic.** Every URL declared under `http_headers.properties` receives an
+    injected token whenever the user has connected it; user-supplied `http_headers` still take precedence.
+   - **The connect gate is driven by `http_headers.required`** — the client forces the user to connect
+    (blocking chat until they do) only for the URLs listed there.
+       - Omit `required` → every declared URL is treated as required (gate on all).
+       - `"required": []` → nothing is gated, but tokens are still injected opportunistically; use this
+        when the server also accepts an API key (via `MCP_SERVERS_INFO_FILE`) or needs no auth.
+       - List specific URLs → only those URLs are gated.
+   - For a complete example see [you_search.hocon](../registries/tools/you_search.hocon); for the client
+    side (Connectors tab, token storage, redirect URI, troubleshooting) see nsflow's
+    [MCP OAuth Connectors guide](https://github.com/cognizant-ai-lab/nsflow/blob/main/docs/MCP_OAUTH.md).
+
 ### Examples
+
+For a configured example in this repo — an agent network wired to the You.com MCP server, with the
+OAuth bearer-token `sly_data_schema` setup described above and comments walking through the auth
+options — see [you_search.hocon](../registries/tools/you_search.hocon).
 
 For simple examples of MCP servers in various languages (e.g. Python, Java) and connecting them to neuro-san,
 please visit this repo: [neuro-san-mcp-examples](https://github.com/kaushik-cognizant/neuro-san-mcp-examples)
@@ -1823,7 +1987,7 @@ make test
 or
 
 ```bash
-python -m pytest tests/ -v --cov=coded_tools --cov=neuro_san_studio -m "not integration"
+python -m pytest tests/ -v --cov=coded_tools --cov=neuro_san_studio -m "not integration and not smoke"
 ```
 
 ### Integration Test
@@ -1876,40 +2040,40 @@ with ongoing additions of test cases to improve coverage.
 
 Please select the execution option that best aligns with the level of validation you want to perform.
 
-`--timer-top-n 100` flag is optional. It shows the top 100 slowest test cases.
+`--durations=100` flag is optional. It shows the 100 slowest test phases (setup, call, teardown).
 
 - Run all integration test cases:
 
     Example:
 
     ```bash
-    pytest -s -m "integration" --timer-top-n 100
+    pytest -s -m "integration" --durations=100
     ```
 
 - Run by a group or groups of those test cases:
 
     ```bash
-    pytest -s -m "<name of folder>" --timer-top-n 100
+    pytest -s -m "<name of folder>" --durations=100
     ```
 
     Example:
 
     ```bash
-    pytest -s -m "integration_basic" --timer-top-n 100
-    pytest -s -m "integration_industry" --timer-top-n 100
+    pytest -s -m "integration_basic" --durations=100
+    pytest -s -m "integration_industry" --durations=100
     ```
 
 - Run by the network agent hocon name of those test cases:
 
     ```bash
-    pytest -s -m "<name of network_agent hocon>" --timer-top-n 100
+    pytest -s -m "<name of network_agent hocon>" --durations=100
     ```
 
     Example:
 
     ```bash
-    pytest -s -m "integration_basic_coffee_finder_advanced" --timer-top-n 100
-    pytest -s -m "integration_industry_airline_policy" --timer-top-n 100
+    pytest -s -m "integration_basic_coffee_finder_advanced" --durations=100
+    pytest -s -m "integration_industry_airline_policy" --durations=100
     ```
 
 - Run a single test case:

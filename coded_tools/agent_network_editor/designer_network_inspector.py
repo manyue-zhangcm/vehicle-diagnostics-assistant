@@ -17,6 +17,7 @@ from typing import Any
 
 from neuro_san.internals.run_context.interfaces.agent_network_inspector import AgentNetworkInspector
 from neuro_san.internals.validation.network.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
+from objsize import get_deep_size
 
 
 class DesignerNetworkInspector(AgentNetworkInspector):
@@ -32,6 +33,7 @@ class DesignerNetworkInspector(AgentNetworkInspector):
         :param network_def: The agent network definition as a dictionary
         """
         self.network_def = network_def
+        self.size_in_bytes: int = get_deep_size(self, "bytes")
 
     def get_config(self) -> dict[str, Any]:
         """
@@ -40,6 +42,16 @@ class DesignerNetworkInspector(AgentNetworkInspector):
         # 12/05/25: We are only using this for purposes of passing to the ConnectivityReporter,
         #           so just return None
         return None
+
+    def get_network_name(self) -> str:
+        """
+        Return an empty name: this inspector is given only the definition, not the network's name.
+
+        The ConnectivityReporter this inspector is made for never asks for it.
+
+        :return: An empty string
+        """
+        return ""
 
     def get_agent_tool_spec(self, name: str) -> dict[str, Any]:
         """
@@ -75,3 +87,9 @@ class DesignerNetworkInspector(AgentNetworkInspector):
 
         front_man: str = list(front_men)[0]
         return front_man
+
+    def get_size_in_bytes(self) -> int:
+        """
+        :return: The size in bytes of this agent network definition.
+        """
+        return self.size_in_bytes
