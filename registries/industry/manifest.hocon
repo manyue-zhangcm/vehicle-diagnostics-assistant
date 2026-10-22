@@ -46,4 +46,5 @@
     "industry/expedia.hocon": true,
     "industry/macys.hocon": true,
     "industry/LinkedInJobSeekerSupportNetwork.hocon": true,
+    "industry/vehicle_diagnostics_assistant.hocon": true,
 }

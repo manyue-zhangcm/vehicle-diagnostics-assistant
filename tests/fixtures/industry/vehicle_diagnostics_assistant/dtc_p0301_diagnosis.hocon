@@ -1,0 +1,41 @@
+# Copyright © 2025-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# END COPYRIGHT
+
+{
+    "agent": "industry/vehicle_diagnostics_assistant",
+    "connections": ["direct"],
+    "timeout_in_seconds": 300,
+    "success_ratio": "1/1",
+    "interactions": [
+        {
+            "sly_data": {
+                "vin": "WVWZZZ1KZ8W000001",
+                "customer_name": "Alex",
+                "current_date": "2026-10-23"
+            },
+            "text": "My check engine light is on and my scanner shows P0301. The engine shakes at red lights.",
+            "response": {
+                "text": {
+                    "gist": ["""
+The answer explains that P0301 is a misfire on cylinder 1, advises the driver to limit driving
+(and to stop if the check engine light flashes), lists likely causes such as a worn spark plug or a faulty
+ignition coil, and gives a repair cost estimate in EUR.
+"""]
+                }
+            }
+        }
+    ]
+}

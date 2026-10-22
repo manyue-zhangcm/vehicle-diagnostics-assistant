@@ -167,6 +167,28 @@ class TestIntegrationTestHocons(TestCase, FailFastParamMixin):
     @parameterized.expand(
         DynamicHoconUnitTests.from_hocon_list(
             [
+                "industry/vehicle_diagnostics_assistant/dtc_p0301_diagnosis.hocon",
+                "industry/vehicle_diagnostics_assistant/dtc_p0aa6_critical.hocon",
+                "industry/vehicle_diagnostics_assistant/booking_creates_ticket.hocon",
+            ]
+        ),
+        skip_on_empty=True,
+    )
+    @pytest.mark.integration
+    @pytest.mark.integration_industry
+    @pytest.mark.integration_industry_vehicle_diagnostics_assistant
+    def test_hocon_industry_vehicle_diagnostics_assistant(self, test_name: str, test_hocon: str):
+        """
+        Test method for a single parameterized test case specified by a hocon file.
+
+        :param test_name: The name of a single test.
+        :param test_hocon: The hocon file of a single data-driven test case.
+        """
+        self.DYNAMIC.one_test_hocon(self, test_name, test_hocon)
+
+    @parameterized.expand(
+        DynamicHoconUnitTests.from_hocon_list(
+            [
                 # These can be in any order.
                 # Ideally more basic functionality will come first.
                 # Barring that, try to stick to alphabetical order.

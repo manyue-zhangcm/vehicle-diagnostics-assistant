@@ -1,0 +1,50 @@
+# Copyright © 2025-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# END COPYRIGHT
+
+{
+    "agent": "industry/vehicle_diagnostics_assistant",
+    "connections": ["direct"],
+    "timeout_in_seconds": 600,
+    "success_ratio": "1/1",
+    "interactions": [
+        {
+            "sly_data": {
+                "vin": "WVWZZZ1KZ8W000001",
+                "customer_name": "Alex",
+                "current_date": "2026-10-23"
+            },
+            "text": "My scanner shows P0128 and the heater blows cold air. I'd like to get it fixed.",
+            "response": {
+                "text": {
+                    "gist": ["""
+The answer explains the coolant thermostat fault, says the vehicle is safe to drive,
+and offers open workshop appointment slots or offers to book an appointment.
+"""]
+                }
+            }
+        },
+        {
+            "text": "Book the slot on 2026-10-27 at 08:00 please. I confirm.",
+            "response": {
+                "text": {
+                    "gist": ["""
+The answer confirms the booking for 2026-10-27 at 08:00 and gives a service ticket ID starting with WO-.
+"""]
+                }
+            }
+        }
+    ]
+}

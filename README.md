@@ -1,453 +1,149 @@
-<!-- pyml disable-next-line first-line-heading -->
-<!-- Badges -->
-<!-- pyml disable-next-line no-inline-html -->
-<p align="center">
-  <!-- GitHub Stats -->
-  <img src="https://img.shields.io/github/stars/cognizant-ai-lab/neuro-san-studio?style=social" alt="GitHub stars">
-  <img src="https://img.shields.io/github/forks/cognizant-ai-lab/neuro-san-studio?style=social" alt="GitHub forks">
-  <img src="https://img.shields.io/github/watchers/cognizant-ai-lab/neuro-san-studio?style=social" alt="GitHub watchers">
-</p>
-<p align="center">
-  <!-- GitHub Info -->
-  <img src="https://img.shields.io/github/last-commit/cognizant-ai-lab/neuro-san-studio" alt="Last Commit">
-  <img src="https://img.shields.io/github/issues/cognizant-ai-lab/neuro-san-studio" alt="Issues">
-  <img src="https://img.shields.io/github/issues-pr/cognizant-ai-lab/neuro-san-studio" alt="Pull Requests">
-  <a href="https://github.com/cognizant-ai-lab/neuro-san-studio/blob/main/LICENSE.txt"><img alt="License"
-  src="https://img.shields.io/github/license/cognizant-ai-lab/neuro-san-studio"></a>
-  <a href="https://pepy.tech/projects/neuro-san-studio"><img alt="PyPI Downloads"
-  src="https://static.pepy.tech/badge/neuro-san-studio" /></a>
-  <a href="https://pypi.org/project/neuro-san-studio/">
-  <img alt="neuro-san-studio@PyPI" src="https://img.shields.io/pypi/v/neuro-san-studio.svg?style=flat-square"></a>
-  <a href="https://deepwiki.com/cognizant-ai-lab/neuro-san-studio">
-  <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki: Neuro SAN Studio" /></a>
+# Vehicle Diagnostics Assistant – a Neuro SAN multi-agent network
 
-</p>
+> Neuro® AI Multi-Agent Accelerator Hackathon – Track 2 submission
 
-<!-- pyml disable-next-line no-inline-html -->
-<p align="center">
-  <!-- Neuro SAN Stats -->
-  Neuro SAN library <br>
-  <a href="https://github.com/cognizant-ai-lab/neuro-san"><img alt="GitHub Repo"
-  src="https://img.shields.io/badge/GitHub-Repo-green.svg" /></a>
-  <img src="https://img.shields.io/github/commit-activity/m/cognizant-ai-lab/neuro-san" alt="commit activity">
-  <a href="https://github.com/cognizant-ai-lab/neuro-san/blob/main/LICENSE.txt"><img alt="License"
-  src="https://img.shields.io/github/license/cognizant-ai-lab/neuro-san"></a>
-  <a href="https://pepy.tech/projects/neuro-san"><img alt="PyPI Downloads"
-  src="https://static.pepy.tech/badge/neuro-san" /></a>
-  <a href="https://pypi.org/project/neuro-san/">
-  <img alt="neuro-san@PyPI" src="https://img.shields.io/pypi/v/neuro-san.svg?style=flat-square"></a>
-  <a href="https://deepwiki.com/cognizant-ai-lab/neuro-san">
-  <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki: Neuro SAN" /></a>
-</p>
+When a warning light comes on, most drivers don't know if they can keep driving, what the problem is, or what the
+repair will cost. The **Vehicle Diagnostics Assistant** is a driver-facing multi-agent network built with
+[Neuro SAN Studio](https://github.com/cognizant-ai-lab/neuro-san-studio). The driver enters an OBD-II trouble code
+(DTC) such as `P0301`, or describes the symptoms in plain language. A team of agents then:
 
-# Neuro SAN Studio
+1. **says whether the car is safe to drive**. Every answer starts with this verdict, and a critical fault means
+   "stop and call roadside assistance".
+2. **explains the fault and its likely causes** in plain language.
+3. **estimates the repair cost**: parts, labor and total, with parts availability and warranty status.
+4. **books a workshop appointment** and, once the driver confirms, **opens a structured service ticket** for the
+   technicians (complaint, DTCs, diagnosis, severity, recommended repairs, part numbers to prepare).
 
-**Your launchpad for building intelligent multi-agent systems.** Neuro SAN Studio is a hands-on playground for the
-[Neuro SAN](https://github.com/cognizant-ai-lab/neuro-san) framework, featuring ready-to-run examples, tutorials, and
-tools that let you design, test, and deploy sophisticated agent networks in minutes—not months. Whether you're a
-researcher exploring adaptive AI systems, a developer prototyping production solutions, or a domain expert configuring
-agents without code, this studio handles the orchestration complexity so you can focus on solving real problems.
-
-<!-- pyml disable-next-line no-inline-html -->
-<h3 align="center">
-  🚀 Try Neuro SAN now, no install required:
-  <a href="https://neuro-san.evolution.ml/">https://neuro-san.evolution.ml/</a>
-</h3>
-<!-- pyml disable-next-line no-inline-html -->
-<p align="center">
-  <a href="https://neuro-san.evolution.ml/"><img alt="Launch Neuro SAN"
-  src="https://img.shields.io/badge/Launch_Neuro_SAN-2ea44f?style=for-the-badge" /></a>
-</p>
-<!-- pyml disable-next-line no-inline-html -->
-<p align="center">
-  This is a Bring Your Own Key (BYOK) instance, so you will need an API key from OpenAI, Anthropic or Gemini.
-</p>
+So the network serves both sides: drivers get a clear answer, and workshops receive a ticket that is ready to work
+on.
 
 ---
 
-<!-- pyml disable-next-line no-inline-html -->
-<p align="center">
-  Neuro SAN is the open-source library powering the Cognizant Neuro® AI Multi-Agent Accelerator, allowing domain experts,
-  researchers and developers to immediately start prototyping and building agent networks across any industry vertical.
-</p>
+## Agent network
 
-## What is Neuro SAN?
-
-[**Neuro AI system of agent networks (Neuro SAN)**](https://github.com/cognizant-ai-lab/neuro-san) is an open-source,
-data-driven multi-agent orchestration framework designed to simplify and accelerate the development of collaborative AI
-systems. It allows users—from machine learning engineers to business domain experts—to quickly build sophisticated
-multi-agent applications without extensive coding, using declarative configuration files (in HOCON format).
-
-Neuro SAN enables multiple large language model (LLM)-powered agents to collaboratively solve complex tasks, dynamically
-delegating subtasks through adaptive inter-agent communication protocols. This approach addresses the limitations inherent
-to single-agent systems, where no single model has all the expertise or context necessary for multifaceted problems.
-
-<!-- pyml disable line-length -->
-| Build a multi-agent network in minutes                                              | Neuro SAN overview                                                                     | Quick start                                                              |
-|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [![Build](./docs/images/designer.png)](https://www.youtube.com/watch?v=wGxvPBN34Mk) | [![Overview](./docs/images/overview.png)](https://www.youtube.com/watch?v=NmniQWQT6vI) | [![Start](./docs/images/nsflow_thumb.png)](https://youtu.be/gfem8ylphWA) |
-
-<!-- pyml enable line-length -->
----
-
-### ✨ Key Features
-
-* **🗂️ Data-Driven Configuration**: Entire agent networks are defined declaratively via simple HOCON files, empowering
-technical and non-technical stakeholders to design agent interactions intuitively.
-* **🔀 Adaptive Communication ([AAOSA Protocol](https://arxiv.org/abs/cs/9812015))**: Agents autonomously determine how
-to delegate tasks, making interactions fluid and dynamic with decentralized decision-making.
-* **🔒 Sly-Data**: Sly Data facilitates safe handling and transfer of sensitive data between agents without exposing it
-directly to any language models.
-* **🧩 Dynamic Agent Network Designer**: Includes a meta-agent called the Agent Network Designer – essentially, an agent
-that creates other agent networks. Provided as an example with Neuro SAN, it can take a high-level description of a
-use-case as input and generate a new custom agent network for it.
-* **🛠️ Flexible Tool Integration**: Integrate custom Python-based "coded tools," APIs, databases, and even external
-agent ecosystems (Agentforce, Agentspace, CrewAI, MCP, A2A agents, LangChain tools and more) seamlessly into your agent workflows.
-* **📈 Robust Traceability**: Detailed logging, tracing, and session-level metrics enhance transparency, debugging, and
-operational monitoring.
-* **🌐 Extensible and Cloud-Agnostic**: Compatible with a wide variety of LLM providers (OpenAI, Anthropic, Azure, Ollama,
-etc.) and deployable in diverse environments (local machines, containers, or cloud infrastructures).
-
----
-
-### Use Cases
-
-Here are a few examples of use-cases that have been implemented with Neuro SAN.
-For more examples, check out [docs/examples.md](docs/examples.md).
-<!-- pyml disable no-inline-html -->
-<table>
-  <thead>
-    <tr>
-      <th>Agent Network</th>
-      <th>Use-Case</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>🧬 <strong>Agent Network Designer</strong></td>
-      <td>Automated generation of multi-agent HOCON configurations.</td>
-      <td>Generates complex multi-agent configurations from natural language input, simplifying the creation of intricate
-      agent workflows.</td>
-    </tr>
-    <tr>
-      <td>🛫 <strong>Airline Policy Assistance</strong></td>
-      <td>Customer support for airline policies.</td>
-      <td>Agents interpret and explain airline policies, assisting customers with inquiries about baggage allowances, cancellations,
-      and travel-related concerns.</td>
-    </tr>
-    <tr>
-      <td>🏦 <strong>Banking Operations & Compliance</strong></td>
-      <td>Automated financial operations and regulatory compliance.</td>
-      <td>Automates tasks such as transaction monitoring, fraud detection, and compliance reporting, ensuring adherence to
-      regulations and efficient routine operations.</td>
-    </tr>
-    <tr>
-      <td>🛍️ <strong>Consumer Packaged Goods (CPG)</strong></td>
-      <td>Market analysis and product development in CPG.</td>
-      <td>Gathers and analyzes market trends, customer feedback, and sales data to support product development and strategic
-      marketing.</td>
-    </tr>
-    <tr>
-      <td>🛡️ <strong>Insurance Agents</strong></td>
-      <td>Claims processing and risk assessment.</td>
-      <td>Automates claims evaluation, assesses risk factors, ensures policy compliance, and improves claim-handling efficiency
-      and customer satisfaction.</td>
-    </tr>
-    <tr>
-      <td>🏢 <strong>Intranet Agents</strong></td>
-      <td>Internal knowledge management and employee support.</td>
-      <td>Provides employees with quick access to policies, HR, and IT support, enhancing internal communications and resource
-      accessibility.</td>
-    </tr>
-    <tr>
-      <td>🛒 <strong>Retail Operations & Customer Service</strong></td>
-      <td>Enhancing retail customer experience and operational efficiency.</td>
-      <td>Handles customer inquiries, inventory management, and supports sales processes to optimize operations and service
-      quality.</td>
-    </tr>
-    <tr>
-      <td>📞 <strong>Telco Network Support</strong></td>
-      <td>Technical support and network issue resolution.</td>
-      <td>Diagnoses network problems, guides troubleshooting, and escalates complex issues, reducing downtime and enhancing
-      customer service.</td>
-    </tr>
-    <tr>
-      <td>📞 <strong>Therapy Vignette Supervision</strong></td>
-      <td>Generates treatment plan for a given therapy vignette.</td>
-      <td>A good example of using multiple different expert agents working together to come up with a single plan.</td>
-    </tr>
-  </tbody>
-</table>
-<!-- pyml enable no-inline-html -->
-
-And many more: check out [docs/examples.md](docs/examples.md).
-
----
-
-## High level Architecture
-
-<!-- pyml disable no-inline-html -->
-<p align="left">
-  <img src="./docs/images/neuroai_arch_diagram.png" alt="neuro-san architecture" width="800"/>
-</p>
-<!-- pyml enable no-inline-html -->
-
----
-
-## Install
-
-These instructions are for Linux and macOS systems. Please adjust the commands accordingly for Windows.
-
-### Install `uv`
-
-[`uv`](https://docs.astral.sh/uv/) is a fast Python package and project manager built by Astral.
-
-Official installation docs:
-👉 [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
-
-### Create a new Python project
-
-Create a folder for your project:
-
-```bash
-mkdir my_project
-cd my_project
+```mermaid
+flowchart TD
+    U([Driver]) <--> FM[VehicleDiagnosticsAssistant<br/>Front Man]
+    FM --> DS[DiagnosticsSpecialist]
+    FM --> RA[RepairAdvisor]
+    FM --> SS[ServiceScheduler]
+    RA --> PS[PartsSpecialist]
+    DS --> DTC[(DtcLookup)]
+    DS --> VP[(VehicleProfile)]
+    RA --> DTC
+    RA --> VP
+    PS --> PL[(PartsLookup)]
+    SS --> SL[(ServiceSlots)]
+    SS --> DTC
+    SS --> TK[(ServiceTicketApi)]
+    TK -. full ticket via sly_data .-> WS([Workshop system])
 ```
 
-Create a virtual environment, initialize a git repo and install `neuro-san-studio`
+| Agent | Type | Role |
+| --- | --- | --- |
+| `VehicleDiagnosticsAssistant` | LLM | Front Man: talks to the driver, gives the safety verdict first, delegates. |
+| `DiagnosticsSpecialist` | LLM | Interprets DTCs or symptoms, reports severity, drivability and likely causes. |
+| `RepairAdvisor` | LLM | Recommends repairs and computes parts + labor cost (95 EUR/h). |
+| `PartsSpecialist` | LLM | Checks price, stock and lead time of parts. |
+| `ServiceScheduler` | LLM | Offers slots and books the appointment only after the driver confirms. |
+| `DtcLookup` | CodedTool | Mock DTC database (10 codes), lookup by code or by symptoms. |
+| `VehicleProfile` | CodedTool | Make, model, powertrain, mileage and warranty, resolved from the VIN. |
+| `PartsLookup` | CodedTool | Mock parts inventory with EUR prices, stock and lead time. |
+| `ServiceSlots` | CodedTool | Open workshop slots over the next business days (skips weekends). |
+| `ServiceTicketApi` | CodedTool | Mock work-order API: validates the booking and opens ticket `WO-xxxx`. |
 
-```bash
-uv init
-uv venv
-source .venv/bin/activate
-uv add neuro-san-studio
-```
-
-### Initialize neuro-san-studio
-
-Run `ns init` to initialize a Neuro SAN Studio project. `ns` stands for Neuro SAN. You can also use the long command
-`neuro-san-studio` instead. It will:
-* let you choose an LLM provider
-* create a `config` folder with your choice of LLM models and plugins configuration
-* create an `mcp` folder with a list of MCP tools
-* create a `registries` folder with a simple agent network and the
-[Agent Network Designer](#agent-network-designer), so you can start designing your own networks right away
-* create `coded_tools` and `middleware` folders with the Python code those agent networks need
-
-To learn more about the `ns` command run `ns --help`.
-
-```bash
-ns init
-```
-
-```bash
-Which LLM providers do you want to enable?
-
-#  Provider       Default model
-1  OpenAI         gpt-5.2 (default)
-2  Anthropic      claude-sonnet
-3  Google Gemini  gemini-3-flash
-
-Enter numbers separated by commas (default: 1):
-```
-
-**Note:** To access all Neuro SAN Studio capabilities, clone this repository and follow the setup instructions in the
-[docs/dev_guide.md](docs/dev_guide.md).
-
-### Set your LLM API key(s)
-
-1. Set your provider key, e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY`
-(or create a `.env` file in the current directory).
-See [docs/api_key.md](docs/api_key.md) for details and other providers.
-
-   ```bash
-   export OPENAI_API_KEY="XXX"
-   ```
-
-2. Check your LLM API keys are correctly configured:
-
-    ```bash
-    ns check-llm-keys
-    ```
-
-3. Check your `config/llm_config.hocon` is working:
-
-    ```bash
-    ns check-config
-    ```
-
-    If the configuration is valid you will get a `hello` response from the configured LLMs.
-
-### Import agent networks
-
-`ns init` already installs the Agent Network Designer, so you can start building right away.
-Use `ns import` to add any of the other agent network examples that ship with `neuro-san-studio`.
-
-Run it with no arguments to pick from an interactive list:
-
-```bash
-ns import
-```
-
-Or name a group or a single network directly:
-
-```bash
-ns import basic         # every network in the "basic" group
-ns import hello_world   # a single network
-```
-
-Each imported network brings its dependencies with it -- coded tools, middleware, sub-networks -- and is registered in
-`registries/manifest.hocon`. A running server picks it up within a few seconds.
-
-See [`docs/cli/import.md`](docs/cli/import.md) for the full set of options.
-
-### Start the developer UI
-
-You can start a `neuro-san` server and the `nsflow` UI with the `ns run` command:
-
-```bash
-ns run
-```
-
-The Neuro SAN server listens on `localhost:8080`.
-
-The nsflow UI is served at
-[http://localhost:4173/](http://localhost:4173/).
-
-Logs land under `logs/` (`server.log`, `nsflow.log`, `thinking_dir/`).
-
-Screenshot:
-
-![NSFlow UI Snapshot](https://raw.githubusercontent.com/cognizant-ai-lab/nsflow/main/docs/snapshot01.png)
-
-### Agent Network Designer
-
-Use the Agent Network Designer to create your own agent network.
-
-1. From the `nsflow` UI, click the `NEW` button at the top, center of the screen.
-![AND Button](docs/images/agent_network_designer_new_button.png)
-2. In the new window that opens, type your prompts in the text box in the bottom right
-corner of the screen. Then Agent Network Designer:
-   * Creates the agents
-   * Links them together
-   * Writes instructions for each agent
-   * Generates a few sample queries you can ask this agent network
-   * Saves the agent network in the `registries/generated` folder
-3. Once the Agent Network Designer is done and comes back with an answer in the chat window,
-you can continue the design by asking it to make changes
-4. Once you're happy with the design, test it! Click the blue `Launch` button at the top
-center of the screen. It opens a new window from which you can chat with the agent network.
-5. If you want to make modifications, go back to the editor window and ask for changes.
-6. You can also edit any agent network by clicking the pen icon next to its name in the main window.
-
-### Import a project from a file / Export to a file
-
-You can import a project from a .hocon file or from a zip file using the `ns import <PATH>`.
-
-```bash
-ns import ~/Downloads/my_project.hocon
-```
-
-Similarly, you can export an agent network and all its dependencies using the `ns export` command:
-
-```bash
-ns export my_project.hocon
-```
-
-See [`docs/cli/export.md`](docs/cli/export.md) for details.
-
-### Command reference
-
-<!-- pyml disable line-length -->
-
-| Command             | Purpose                                                          | Key flags                                                                                                                                                                       |
-|---------------------|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ns init`           | Scaffold a starter project in the current dir.                   | `--providers openai,anthropic,google`                                                                                                                                           |
-| `ns run`            | Start the Neuro SAN server and nsflow UI.                        | `--server-host`, `--server-http-port`, `--nsflow-port`, `--log-level`, `--client-only`, `--server-only`                                                                         |
-| `ns chat`           | Chat with an agent network directly (no server needed).          | Positional: agent name, `--connection`,  `--host`, `--port`, `--one-shot`, `--list`.                                                                                            |
-| `ns import`         | Import agent networks into the current project.                  | Positional: space-separated group names, network names, or `all`; or local `.hocon` / `.zip` paths (don't mix the two). `--force` to overwrite. Omit args for interactive mode. |
-| `ns export`         | Bundle a network from the current project into a shareable file. | Positional: network name (e.g. `music_nerd` or `basic/music_nerd`). `-o` / `--output` to set the output path. Omit args for interactive picker.                                 |
-| `ns check-llm-keys` | Validate LLM API keys / env vars.                                | `--tier 1` (placeholder), `--tier 2` (format), `--tier 3` (live API call, default)                                                                                              |
-| `ns check-config`   | Validate the LLM configurations in a HOCON file.                 | `--hocon-path` (defaults to `config/llm_config.hocon`)                                                                                                                          |
-| `ns validate`       | Validate a network file and load its coded tools and middleware. | Positional: HOCON path. `--verbose`, `--manifest`, `--external-agents`, `--registry-dir`. References to other networks (`/name`) are checked against the networks served by the manifest.                                    |
-
-<!-- pyml enable line-length -->
-
-Use `ns <command> --help` for the full flag list of any subcommand.
+The agents coordinate with Neuro SAN's **AAOSA** protocol: the Front Man asks the specialists which parts of the
+request they can handle, then puts their answers together. Tools return deterministic data, so the LLMs reason
+and explain instead of making up facts.
 
 ---
 
-## User guide
+## Highlights
 
-Ready to dive in? Check out the [user guide](docs/user_guide.md) for a detailed overview of the neuro-san library
-and its features.
-
----
-
-## Tutorial
-
-For a detailed tutorial, refer to [docs/tutorial.md](docs/tutorial.md).
-
----
-
-## Examples
-
-For examples of agent networks, check out [docs/examples.md](docs/examples.md).
+- **Safety first.** A critical fault such as `P0AA6` (high-voltage isolation fault in an EV) tells the driver to stop,
+  call roadside assistance and not touch the orange high-voltage cables, before anything else is said.
+- **Privacy with `sly_data`.** The VIN and the owner's name are passed as `sly_data`. The CodedTools can use them,
+  but they are **never sent to an LLM**. Agents only see a masked VIN (`*************0001`).
+- **A ticket for the workshop.** `ServiceTicketApi` adds the full ticket to `sly_data["service_tickets"]`, and the
+  Front Man's `allow.to_upstream` policy returns it to the client application, for example to forward it to a
+  workshop management system.
+- **No booking without consent.** An appointment is booked only after the driver picks a slot and confirms it.
+- **Bounded execution.** `max_steps` and `max_execution_seconds` are set, as Neuro SAN recommends.
 
 ---
 
-## Developer Guide
+## Files
 
-For local development setup and contribution instructions, see the [docs/dev_guide.md](docs/dev_guide.md).
-
----
-
-## Community Projects
-
-### Applications
-
-* [Climate Change](https://github.com/cognizant-ai-lab/neuro-san-cc):
-a tool to answer questions about COP, the Paris Agreement or the Kyoto Protocol using UNFCCC documents.
-* [Enterprise Access Portal](https://github.com/M-Elsaied/enterprise-access-portal):
-an AI-powered multi-agent system for managing enterprise application access requests and IT operations.
-* [F1 fans eval](https://github.com/deepsaia/f1-fan-eval):
-an app that evaluates F1 fan submissions about why they are the biggest F1 fans.
-* [PDF Knowledge Assistant](https://github.com/M-Elsaied/neuro-san-studio/tree/pdf-knowledge-base/apps/pdf_knowledge_assistant):
-a Flask web app that queries PDFs using RAG with topic-based long-term memory synthesis across documents.
-* [Loopy Agents](https://github.com/babakatwork/loopy_agent):
-run Neuro SAN agents continuously or on triggers through a separate service, with asynchronous messaging.
-* [Annual Report Reader](https://github.com/shrushtiimehta/neuro-san-annual-report-reader):
-analyzes a LinkedIn profile and delivers a personalized summary of Cognizant's 2024 Annual Report,
-surfacing content most relevant to the user's industry and seniority level.
-* [Tochiro File Organizer](https://github.com/ofrancon/tochiro):
-a macOS file organization assistant with a dedicated UI to analyze a folder,
-create a plan for moving the files, ask for approval and execute the moves.
-* [Legacy Business-Rule Extractor](https://github.com/Sivakumarraj/neuro-san-legacy-analyzer):
-a 6-agent network that extracts business rules from legacy COBOL, Java, and PL/SQL code,
-pairing deterministic CodedTool parsers with LLM agents to produce a modernization-ready
-specification document.
-
-### Utilities
-
-* [Neuro SAN Web Client](https://github.com/cognizant-ai-lab/neuro-san-web-client):
-a basic Flask web client interface for Neuro SAN.
-* [Neuro SAN Slack app](./apps/slack/README.md)
-a Slack integration that lets you interact with Neuro SAN directly from your workspace.
+| Path                                                                 | Content                                    |
+|----------------------------------------------------------------------|--------------------------------------------|
+| `registries/industry/vehicle_diagnostics_assistant.hocon`            | Agent network definition                   |
+| `registries/industry/manifest.hocon`                                 | Registers and enables the network          |
+| `coded_tools/industry/vehicle_diagnostics_assistant/`                | CodedTools and mock data catalogs          |
+| `docs/examples/industry/vehicle_diagnostics_assistant.md`            | Detailed network documentation             |
+| `tests/coded_tools/industry/vehicle_diagnostics_assistant/`          | Unit tests for every CodedTool             |
+| `tests/fixtures/industry/vehicle_diagnostics_assistant/`             | Integration test fixtures (LLM-judged)     |
 
 ---
 
-## Links
+## Run it
 
-* Website: [Cognizant AI Lab](https://www.cognizant.com/us/en/ai-lab)
-* YouTube: [Decision AI](https://www.youtube.com/@decision-ai)
-* X: [@cognizantailab](https://x.com/cognizantailab)
-* LinkedIn: [Cognizant AI Lab](https://www.linkedin.com/showcase/cognizant-ai-lab)
-* Amazon Marketplace: [Cognizant Neuro SAN](https://aws.amazon.com/marketplace/pp/prodview-z246c4x7j3xb6)
-* Azure Marketplace: [Cognizant Neuro SAN](https://marketplace.microsoft.com/en-us/product/virtual-machine/cognizant.cognizant_neurosanai-application)
+Requires Python 3.12+ and an API key for OpenAI, Anthropic or Gemini.
+
+```bash
+git clone <this-repo-url> && cd <repo>
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt -r requirements-build.txt
+export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY / GOOGLE_API_KEY – never commit keys
+python -m neuro_san_studio run      # server on :8080, nsflow UI on :4173
+```
+
+In the nsflow UI, select `industry/vehicle_diagnostics_assistant` and set the **Sly Data**:
+
+```json
+{"vin": "WVWZZZ1KZ8W000001", "customer_name": "Alex", "current_date": "2026-10-23"}
+```
+
+Demo vehicles: `WVWZZZ1KZ8W000001` (2019 VW Golf, gasoline), `WBA7E2C51KB000002` (2022 BMW 530e, plug-in hybrid),
+`WMEEJ9AA5FK000003` (2023 Mercedes-Benz EQA, electric).
+
+Command line alternative:
+
+```bash
+export PYTHONPATH=$(pwd) AGENT_TOOL_PATH=coded_tools/ AGENT_MANIFEST_FILE=registries/manifest.hocon
+python -m neuro_san.client.agent_cli --agent industry/vehicle_diagnostics_assistant \
+  --sly_data '{"vin": "WVWZZZ1KZ8W000001", "customer_name": "Alex", "current_date": "2026-10-23"}'
+```
+
+### Sample queries
+
+- My check engine light is on and my scanner shows P0301. The engine shakes at red lights.
+- The car shakes at idle and the check engine light is flashing. Can I keep driving?
+- How much would it cost to fix code P0420?
+- My EV shows a high voltage warning and code P0AA6. *(use the EQA VIN)*
+- Please book me the earliest appointment to get it fixed.
+
+### Tests
+
+```bash
+python -m pytest tests/coded_tools/industry/vehicle_diagnostics_assistant -v
+python -m neuro_san_studio validate registries/industry/vehicle_diagnostics_assistant.hocon
+```
 
 ---
 
-## More details
+## Demo video
 
-For more information, check out the [Cognizant AI Lab Neuro SAN landing page](https://www.cognizant.com/us/en/ai-lab/neuro-san).
+The demo video was uploaded to the hackathon SharePoint, as the submission rules require.
+
+---
+
+## Going beyond the demo
+
+All data is mock data and contains no client data. To use the network for real, replace `dtc_catalog.py`,
+`parts_catalog.py` and `vehicle_registry.py` with calls to an OEM diagnostics database, a parts/ERP system and a
+fleet or CRM system, and point `ServiceTicketApi` at a real dealer management system.
+
+---
+
+Built on [Neuro SAN Studio](https://github.com/cognizant-ai-lab/neuro-san-studio) (Apache 2.0) by Cognizant AI Lab.
+The original Neuro SAN Studio README is kept as `README_neuro_san_studio.md`.

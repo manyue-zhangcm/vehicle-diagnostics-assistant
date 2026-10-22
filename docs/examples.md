@@ -69,6 +69,7 @@ Here are a few examples ordered by level of complexity.
     - [Insurance Underwriting Agents](#insurance-underwriting-agents)
     - [KeyBank Financial Services](#keybank-financial-services)
     - [Sentiment Analysis of News Sources](#sentiment-analysis-of-news-sources)
+    - [Vehicle Diagnostics Assistant](#vehicle-diagnostics-assistant)
   - [🧪 Experimental and Research](#-experimental-and-research)
     - [Agent Network Designer](#agent-network-designer)
     - [Agent Network Architect](#agent-network-architect)
@@ -587,6 +588,15 @@ perspectives. Using keyword-driven sentiment analysis, it automates news retriev
 generation to provide concise, data-backed insights on sentiment polarity, tone variations, and media bias.
 
 **Tags:** `tool`, `API`, `AAOSA`
+
+### Vehicle Diagnostics Assistant
+
+[Vehicle Diagnostics Assistant](examples/industry/vehicle_diagnostics_assistant.md) is a driver-facing multi-agent
+system that explains OBD-II trouble codes and symptoms, tells the driver whether the vehicle is safe to drive,
+estimates repair costs with parts availability, and books a workshop appointment that opens a service ticket for the
+technicians. The vehicle's VIN and the owner's name are passed as `sly_data`, so they never reach the LLMs.
+
+**Tags:** `AAOSA`, `tool`, `sly_data`, `automotive`
 
 ## 🧪 Experimental and Research
 

@@ -1,0 +1,255 @@
+# Copyright © 2025-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# END COPYRIGHT
+{
+include "registries/aaosa_basic.hocon"
+
+# Load the shared LLM configuration from a single source of truth.
+# Note that the file path here is relative to the root level of the repo.
+include "config/llm_config.hocon"
+
+max_steps = 2000
+max_execution_seconds = 600
+
+metadata {
+    description =
+"""Driver-facing vehicle diagnostics assistant. It explains dashboard warnings, OBD-II trouble codes (DTCs)
+and symptoms, tells the driver whether the vehicle is safe to drive, recommends repairs with a parts and labor
+estimate, and books a workshop appointment that opens a structured service ticket for the technicians.
+The vehicle's VIN and the owner's name are passed as sly_data, so they never reach the LLMs."""
+    tags = ["AAOSA", "tool", "sly_data", "automotive"]
+    sample_queries = [
+        "My check engine light is on and my scanner shows P0301. What does it mean?",
+        "The car shakes at idle and the check engine light is flashing. Can I keep driving?",
+        "How much would it cost to fix code P0420?",
+        "My EV shows a high voltage warning and code P0AA6.",
+        "Please book me the earliest appointment to get it fixed.",
+    ]
+}
+
+this_is_not_a_game = """This is NOT a game. Do NOT pretend, call your tools. Do NOT make up codes, prices,
+part numbers or appointment slots. Do NOT infer information. Just ask."""
+
+labor_rate = """The workshop labor rate is 95 EUR per hour."""
+
+expertise_scoping_instructions = """
+Only answer inquiries that are directly within your area of expertise. Do not try to help for other matters.
+Do not mention what you can NOT do. Only mention what you can do.
+"""
+
+tools = [
+    # This is the agent network's entry point, the "Front Man" that talks to the driver.
+    {
+        name = "VehicleDiagnosticsAssistant"
+        function {
+            description = """I help drivers understand vehicle warning lights, trouble codes and symptoms,
+tell them whether it's safe to keep driving, estimate repair costs and book a workshop appointment."""
+        }
+        instructions = ${expertise_scoping_instructions} """
+You are a friendly vehicle diagnostics assistant talking to a driver, who is not a mechanic.
+For any problem the driver describes, call your down-chain agents:
+- DiagnosticsSpecialist to identify the fault, its severity and whether the vehicle is safe to drive.
+- RepairAdvisor to explain the likely repairs and estimate the cost.
+- ServiceScheduler only when the driver wants to book an appointment.
+Always start your answer with the safety verdict. If severity is critical, tell the driver to stop in a
+safe place and call roadside assistance before anything else, and do not offer to keep driving.
+Explain things in plain language, avoid jargon, and keep the answer short and structured.
+Offer to book a workshop appointment when a repair is needed.
+Never book an appointment without the driver choosing a slot and confirming it.
+When the driver confirms a slot, give ServiceScheduler the chosen slot, the driver's complaint, the trouble codes,
+the preliminary diagnosis, the severity reported by DiagnosticsSpecialist, the recommended repairs and their
+part numbers.
+The system already knows the driver's name and vehicle: do not ask for them or comment on them.
+Always return the ticket ID and appointment time after a booking.
+Remind the driver that this is a preliminary diagnosis to be confirmed by a technician.
+""" ${this_is_not_a_game} "\n" ${aaosa_instructions}
+        # Return the full service tickets (including the VIN) to the client application, not to the LLMs.
+        allow {
+            to_upstream {
+                sly_data {
+                    service_tickets = true
+                }
+            }
+        }
+        tools = ["DiagnosticsSpecialist", "RepairAdvisor", "ServiceScheduler"]
+    }
+    {
+        name = "DiagnosticsSpecialist"
+        function = ${aaosa_call}{
+            description = """Identifies vehicle faults from trouble codes (DTCs) or symptoms, and assesses
+their severity and whether the vehicle is safe to drive."""
+        }
+        instructions = """
+You are an automotive diagnostics specialist.
+Look up any trouble code with DtcLookup. If the driver only describes symptoms, search by symptoms
+and present the candidate codes as possibilities, recommending an OBD-II scan to confirm.
+Call VehicleProfile to get the vehicle's powertrain, mileage and warranty status, and take them into account:
+for instance, a high-voltage fault only applies to hybrid and electric vehicles.
+Report for each fault: the code, what it means in plain language, the severity, whether it is safe to drive,
+and the most likely causes ordered by likelihood.
+""" ${this_is_not_a_game} "\n" ${aaosa_instructions}
+        tools = ["DtcLookup", "VehicleProfile"]
+    }
+    {
+        name = "RepairAdvisor"
+        function = ${aaosa_call}{
+            description = """Recommends repairs for a diagnosed vehicle fault and estimates parts, labor and total
+cost, including parts availability and warranty coverage."""
+        }
+        instructions = """
+You are a service advisor at a car workshop.
+Use DtcLookup to get the recommended repairs, part numbers and labor hours for each trouble code.
+Ask PartsSpecialist for the price and availability of the parts.
+Use VehicleProfile to check the warranty status: if the warranty is active, say the repair may be covered.
+""" ${labor_rate} """
+For each recommended repair, give the parts cost, the labor cost (labor hours times the labor rate)
+and the total, and mention parts that must be ordered and their lead time.
+Start with the cheapest and most likely fix.
+""" ${this_is_not_a_game} "\n" ${aaosa_instructions}
+        tools = ["DtcLookup", "PartsSpecialist", "VehicleProfile"]
+    }
+    {
+        name = "PartsSpecialist"
+        function = ${aaosa_call}{
+            description = """Checks price, stock and lead time of vehicle parts by part number."""
+        }
+        instructions = """
+You manage the workshop's parts inventory.
+Use PartsLookup to check the price, stock and lead time of the requested part numbers.
+""" ${this_is_not_a_game} "\n" ${aaosa_instructions}
+        tools = ["PartsLookup"]
+    }
+    {
+        name = "ServiceScheduler"
+        function = ${aaosa_call}{
+            description = """Lists open workshop appointment slots and books an appointment, which opens a
+service ticket for the technicians."""
+        }
+        instructions = """
+You schedule workshop appointments.
+Call ServiceSlots to get the open slots and offer them to the driver. For high severity faults, suggest the
+earliest slot. For critical faults, the vehicle must be towed: mention that in the ticket's diagnosis summary.
+Only call ServiceTicketApi once the driver has chosen and confirmed a slot.
+When creating the ticket, include the driver's complaint in their own words, the trouble codes,
+the preliminary diagnosis, the severity, the recommended repairs and the part numbers to prepare.
+Never guess the severity or the part numbers: if they were not given to you, look up the trouble codes with
+DtcLookup and use its severity and the part numbers of its recommended repairs.
+If ServiceTicketApi returns an error, ask the driver for the missing information.
+""" ${this_is_not_a_game} "\n" ${aaosa_instructions}
+        tools = ["ServiceSlots", "DtcLookup", "ServiceTicketApi"]
+    }
+    {
+        name = "DtcLookup"
+        function {
+            description = """Looks up OBD-II diagnostic trouble codes. Returns description, system, severity,
+drivability, symptoms, possible causes and recommended repairs with part numbers and labor hours.
+Provide dtc_codes when codes are known, otherwise describe the symptoms."""
+            parameters {
+                type = "object"
+                properties {
+                    dtc_codes {
+                        type = "string"
+                        description = "Comma separated trouble codes, e.g. 'P0301, P0420'."
+                    }
+                    symptoms {
+                        type = "string"
+                        description = "What the driver notices, e.g. 'engine shaking and flashing check engine light'."
+                    }
+                }
+            }
+        }
+        class = "dtc_lookup.DtcLookup"
+    }
+    {
+        name = "VehicleProfile"
+        function {
+            description = """Returns make, model, year, powertrain, mileage and warranty status of the
+driver's vehicle."""
+        }
+        class = "vehicle_profile.VehicleProfile"
+    }
+    {
+        name = "PartsLookup"
+        function {
+            description = """Returns name, price in EUR and availability for the given part numbers,
+plus the total parts price."""
+            parameters {
+                type = "object"
+                properties {
+                    part_numbers {
+                        type = "string"
+                        description = "Comma separated part numbers, e.g. 'SP-IR-01, IC-0301'."
+                    }
+                }
+                required = ["part_numbers"]
+            }
+        }
+        class = "parts_lookup.PartsLookup"
+    }
+    {
+        name = "ServiceSlots"
+        function {
+            description = """Returns the open workshop appointment slots for the next business days."""
+        }
+        class = "service_slots.ServiceSlots"
+    }
+    {
+        name = "ServiceTicketApi"
+        function {
+            description = """Books a workshop appointment and opens a service ticket for the technicians.
+Returns the ticket ID and the ticket details."""
+            parameters {
+                type = "object"
+                properties {
+                    appointment_slot {
+                        type = "string"
+                        description = "The slot chosen by the driver, exactly as returned by ServiceSlots."
+                    }
+                    customer_complaint {
+                        type = "string"
+                        description = "What the driver reported, in their own words."
+                    }
+                    diagnosis_summary {
+                        type = "string"
+                        description = "The preliminary diagnosis."
+                    }
+                    severity {
+                        type = "string"
+                        description = "One of: low, medium, high, critical."
+                    }
+                    dtc_codes {
+                        type = "string"
+                        description = "Comma separated trouble codes, if any."
+                    }
+                    recommended_repairs {
+                        type = "string"
+                        description = "The repairs the technicians should perform or check."
+                    }
+                    part_numbers {
+                        type = "string"
+                        description = "Comma separated part numbers to prepare."
+                    }
+                    customer_name {
+                        type = "string"
+                        description = "The driver's name, only if the system asks for it."
+                    }
+                }
+                required = ["appointment_slot", "customer_complaint", "diagnosis_summary", "severity"]
+            }
+        }
+        class = "service_ticket_api.ServiceTicketApi"
+    }
+]
+}
