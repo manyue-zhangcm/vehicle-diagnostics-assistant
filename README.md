@@ -134,7 +134,7 @@ python -m neuro_san_studio validate registries/industry/vehicle_diagnostics_assi
 ## Demo video
 
 The demo video was uploaded to the hackathon SharePoint, as the submission rules require.
-
+https://cognizantonline-my.sharepoint.com/:v:/r/personal/2508345_cognizant_com/Documents/Hackathon%20EMEA%20APJ%20Track%202%20Video%20Submissions/2237816.mp4?d=w56c60e0ca29442518e93a48472c7e287&csf=1&web=1&e=pNtzKb&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
 ---
 
 ## Going beyond the demo
